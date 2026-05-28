@@ -25,6 +25,7 @@ const MODULE_CONFIG: any = {
     'PLANIFICACION': {
         icon: Compass,
         routes: [
+            { href: "/organigrama", label: "Explorar Organigrama", icon: Import },
             { href: "/tablero", label: "Tablero de Control", icon: LayoutDashboard },
             { href: "/proyectos", label: "Proyectos", icon: FolderKanban },
             { href: "/objetivos-especificos", label: "Obj. Específicos", icon: Target },

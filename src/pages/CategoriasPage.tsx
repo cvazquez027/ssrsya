@@ -158,27 +158,27 @@ export default function CategoriasPage() {
                 <Card className="bg-slate-50 border-slate-200 shadow-sm">
                     <CardHeader><CardTitle className="text-lg">Asociar Indicador a Proyecto Integrado</CardTitle></CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-                        {/* MODIFICACIÓN QUIRÚRGICA: Contenedor con overflow-hidden y trigger con ajuste dinámico de altura */}
+                        {/* He agregado scroll al combo de Proyecto Integrado */}
                         <div className="space-y-1 w-full overflow-hidden">
                             <Label>Proyecto Integrado</Label>
                             <Select value={idCategoriaSeleccionada} onValueChange={setIdCategoriaSeleccionada}>
                                 <SelectTrigger className="bg-white w-full h-auto min-h-[40px] whitespace-normal break-words text-left">
                                     <SelectValue placeholder="Seleccione Proyecto Integrado..." />
                                 </SelectTrigger>
-                                <SelectContent className="max-w-[80vw] sm:max-w-[400px]">
+                                <SelectContent className="max-w-[80vw] sm:max-w-[400px] max-h-[300px] overflow-y-auto">
                                     {categorias.map(c => <SelectItem key={c.id_categoria} value={c.id_categoria.toString()} className="whitespace-normal break-words">{c.nombre}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        {/* MODIFICACIÓN QUIRÚRGICA: Contenedor con overflow-hidden y trigger con ajuste dinámico de altura */}
+                        {/* He agregado scroll al combo de Proyecto Origen */}
                         <div className="space-y-1 w-full overflow-hidden">
                             <Label>Proyecto Origen (Aprobados)</Label>
                             <Select value={idProyectoSel} onValueChange={cargarIndicadoresProyecto}>
                                 <SelectTrigger className="bg-white w-full h-auto min-h-[40px] whitespace-normal break-words text-left">
                                     <SelectValue placeholder="Buscar Proyecto..." />
                                 </SelectTrigger>
-                                <SelectContent className="max-w-[80vw] sm:max-w-[400px]">
+                                <SelectContent className="max-w-[80vw] sm:max-w-[400px] max-h-[300px] overflow-y-auto">
                                     {proyectos.map(p => (
                                         <SelectItem 
                                             key={p.id_proyecto} 
@@ -193,14 +193,14 @@ export default function CategoriasPage() {
                             </Select>
                         </div>
 
-                        {/* MODIFICACIÓN QUIRÚRGICA: Contenedor con overflow-hidden y trigger con ajuste dinámico de altura */}
+                        {/* He agregado scroll al combo de Indicador */}
                         <div className="space-y-1 w-full overflow-hidden">
                             <Label>Indicador</Label>
                             <Select value={idIndicadorSel} onValueChange={setIdIndicadorSel} disabled={!idProyectoSel}>
                                 <SelectTrigger className="bg-white w-full h-auto min-h-[40px] whitespace-normal break-words text-left">
                                     <SelectValue placeholder="Seleccione Indicador..." />
                                 </SelectTrigger>
-                                <SelectContent className="max-w-[80vw] sm:max-w-[400px]">
+                                <SelectContent className="max-w-[80vw] sm:max-w-[400px] max-h-[300px] overflow-y-auto">
                                     {indicadoresFull.map(i => (
                                         <SelectItem 
                                             key={i.id_indicador} 
@@ -226,11 +226,12 @@ export default function CategoriasPage() {
                         <CardTitle className="text-lg">Grilla de Asociaciones Vigentes</CardTitle>
                         <div className="flex items-center gap-2 w-full sm:w-80">
                             <Filter className="h-4 w-4 text-slate-400" />
+                            {/* He agregado scroll al combo de filtro de la grilla */}
                             <Select value={filtroCategoria} onValueChange={(val) => { setFiltroCategoria(val); cargarGrilla(val); }}>
                                 <SelectTrigger className="h-auto min-h-[36px] whitespace-normal break-words text-left">
                                     <SelectValue placeholder="Filtrar..." />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="max-h-[300px] overflow-y-auto">
                                     <SelectItem value="todas">Todas los Proyectos Intregrados</SelectItem>
                                     {categorias.map(c => <SelectItem key={c.id_categoria} value={c.id_categoria.toString()} className="whitespace-normal">{c.nombre}</SelectItem>)}
                                 </SelectContent>
@@ -269,23 +270,23 @@ export default function CategoriasPage() {
                                                                                 <div className="text-[10px] text-blue-600 font-bold mb-1">PROY: {proy.sigla}</div>
                                                                                 <div className="text-slate-600 mb-1 leading-tight">{oe.descripcion}</div>
                                                                                 <div className="text-slate-500 italic leading-tight">{act.descripcion}</div>
-                                                                            </td>
+                                                                             </td>
                                                                             <td rowSpan={indSpan} className="p-3 align-top bg-white border-r">
                                                                                 <div className="font-semibold text-slate-800 mb-2 leading-tight">{ind.nombre}</div>
                                                                                 <BadgeAvance avance={getIndicadorAvance(ind)} />
-                                                                            </td>
+                                                                             </td>
                                                                         </>
                                                                     )}
                                                                     <td className="p-3 align-top border-r">
                                                                         <div className="text-slate-600 mb-1">{mon.periodo_descripcion}</div>
                                                                         <BadgeAvance avance={getMonitoreoAvance(mon)} />
-                                                                    </td>
+                                                                     </td>
                                                                     <td className="p-3 align-top border-r text-center">{mon.meta_propuesta}{esPct && mon.meta_propuesta ? '%' : ''}</td>
                                                                     <td className="p-3 align-top font-bold text-blue-700 border-r text-center">{mon.meta_alcanzada ? `${mon.meta_alcanzada}${esPct ? '%' : ''}` : "-"}</td>
                                                                     {mIdx === 0 && (
                                                                         <td rowSpan={indSpan} className="p-3 align-middle text-center border-r">
                                                                             <Button variant="ghost" size="sm" onClick={() => handleDesvincular(cat.id_categoria, ind.id_indicador)} className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 p-0"><Trash2 className="h-4 w-4"/></Button>
-                                                                        </td>
+                                                                         </td>
                                                                     )}
                                                                 </tr>
                                                             )) : (
@@ -295,15 +296,15 @@ export default function CategoriasPage() {
                                                                         <div className="text-[10px] text-blue-600 font-bold mb-1">PROY: {proy.sigla}</div>
                                                                         <div className="text-slate-600 mb-1 leading-tight">{oe.descripcion}</div>
                                                                         <div className="text-slate-500 italic leading-tight">{act.descripcion}</div>
-                                                                    </td>
+                                                                     </td>
                                                                     <td className="p-3 align-top bg-white border-r">
                                                                         <div className="font-semibold text-slate-800 mb-2 leading-tight">{ind.nombre}</div>
                                                                         <BadgeAvance avance={getIndicadorAvance(ind)} />
-                                                                    </td>
+                                                                     </td>
                                                                     <td colSpan={3} className="p-3 text-center text-slate-400 italic align-middle border-r">Sin periodos cargados</td>
                                                                     <td className="p-3 align-middle text-center border-r">
                                                                         <Button variant="ghost" size="sm" onClick={() => handleDesvincular(cat.id_categoria, ind.id_indicador)} className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 p-0"><Trash2 className="h-4 w-4"/></Button>
-                                                                    </td>
+                                                                     </td>
                                                                 </tr>
                                                             )
                                                         })

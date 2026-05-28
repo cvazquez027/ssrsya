@@ -6,8 +6,8 @@ if (in_array($_SERVER['HTTP_HOST'], $whitelist)) {
     // --- CREDENCIALES LOCALES (localhost) ---
     $host = 'localhost';
     $db   = 'seguimiento_planificacion';
-    $user = 'root';
-    $pass = 'Tomi.vc_0725';
+    $user = 'admin';
+    $pass = 'Emma.Tomi_1725';
     $port = '3306';
 } else {
     // --- CREDENCIALES PRODUCCIÓN (InfinityFree) ---

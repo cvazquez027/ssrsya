@@ -4,7 +4,7 @@ import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Pencil, Trash2, Search, ArrowRight, FolderKanban, X, Plus, Save, MessageSquare, ShieldAlert } from "lucide-react"
+import { Pencil, Trash2, Search, ArrowRight, FolderKanban, X, Plus, Save, MessageSquare, ShieldAlert, ChevronLeft, ChevronRight } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -29,7 +29,7 @@ export default function ObjetivosPage() {
   const filterProyecto = idProyectoFilter || "todos";
 
   const [objetivos, setObjetivos] = useState<any[]>([])
-  const [proyectosMaster, setProyectosMaster] = useState<any[]>([]) // Master list para los filtros y validaciones
+  const [proyectosMaster, setProyectosMaster] = useState<any[]>([])
   const [opciones, setOpciones] = useState<{ dependencias: any[] }>({ dependencias: [] })
 
   const [loading, setLoading] = useState(true)
@@ -47,6 +47,10 @@ export default function ObjetivosPage() {
   const [commentOpen, setCommentOpen] = useState(false)
   const [selectedEntity, setSelectedEntity] = useState({ id: 0, title: "" })
 
+  // Estados de paginación
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(30)
+
   useEffect(() => {
     fetchUser()
     fetchOpciones()
@@ -56,6 +60,11 @@ export default function ObjetivosPage() {
   useEffect(() => {
     fetchObjetivos()
   }, [siglaFilter, idProyectoFilter])
+
+  // He agregado este efecto para resetear la página cuando cambian los filtros o la búsqueda
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, siglaFilter, idProyectoFilter, rowsPerPage])
 
   const fetchUser = async () => {
     try {
@@ -229,11 +238,16 @@ export default function ObjetivosPage() {
     (oe.proyecto_nombre || "").toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  let tituloPagina = "Listado de Objetivos Específicos";
-  if (idProyectoFilter && objetivos.length > 0) tituloPagina = `Objetivos del Proyecto: ${objetivos[0].proyecto_nombre}`;
-  else if (siglaFilter) tituloPagina = `Objetivos de ${siglaFilter}`;
+  // Lógica de paginación
+  const totalPages = Math.ceil(filtered.length / rowsPerPage)
+  const startIndex = (currentPage - 1) * rowsPerPage
+  const endIndex = startIndex + rowsPerPage
+  const paginatedData = filtered.slice(startIndex, endIndex)
 
-  if (loading) return <DashboardLayout currentSection="Objetivos"><div className="p-8 text-center">Cargando datos...</div></DashboardLayout>
+  // He cambiado el título a uno fijo según lo solicitado
+  const tituloPagina = "Objetivos Específicos"
+
+  if (loading) return <DashboardLayout currentSection="Objetivos Específicos"><div className="p-8 text-center">Cargando datos...</div></DashboardLayout>
 
   // PANTALLA DE ACCESO DENEGADO
   if (accesoDenegado) {
@@ -282,9 +296,10 @@ export default function ObjetivosPage() {
                   </SelectContent>
               </Select>
 
+              {/* He agregado max-height y overflow al SelectContent del filtro de proyectos */}
               <Select value={filterProyecto} onValueChange={handleProyectoChange}>
                   <SelectTrigger className="w-full sm:w-[250px] bg-white"><SelectValue placeholder="Proyecto" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px] overflow-y-auto">
                       <SelectItem value="todos">Todos los Proyectos</SelectItem>
                       {proyectosDisponibles.map(p => (
                           <SelectItem key={p.id_proyecto} value={String(p.id_proyecto)} title={p.proyecto_descripcion}>
@@ -315,10 +330,10 @@ export default function ObjetivosPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 ? (
+                  {paginatedData.length === 0 ? (
                     <tr><td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">No se encontraron resultados</td></tr>
                   ) : (
-                    filtered.map((oe) => (
+                    paginatedData.map((oe) => (
                       <tr key={oe.id_oe} className="bg-white border-b hover:bg-gray-50">
                         <td className="px-6 py-4 font-medium text-gray-900 align-top">{oe.descripcion}</td>
                         <td className="px-6 py-4 text-muted-foreground align-top">
@@ -359,16 +374,63 @@ export default function ObjetivosPage() {
                                 </>
                             )}
                         </td>
-                      </tr>
+                       </tr>
                     ))
                   )}
                 </tbody>
-              </table>
+               </table>
              </div>
+
+             {/* He agregado el panel de paginación con selector de filas por página */}
+             {filtered.length > 0 && (
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-6 py-4 border-t bg-gray-50">
+                  <div className="text-sm text-muted-foreground">
+                    Mostrando {startIndex + 1} a {Math.min(endIndex, filtered.length)} de {filtered.length} resultados
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Anterior
+                    </Button>
+                    <span className="text-sm px-2">
+                      Página {currentPage} de {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Siguiente
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Filas por página:</span>
+                    <Select value={String(rowsPerPage)} onValueChange={(val) => setRowsPerPage(Number(val))}>
+                      <SelectTrigger className="w-[70px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="30">30</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+             )}
           </CardContent>
         </Card>
 
-        {/* MODAL CREAR/EDITAR - Modificación para responsividad en nombres largos */}
+        {/* MODAL CREAR/EDITAR */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent className="sm:max-w-[600px] w-[95vw]">
             <DialogHeader>
@@ -385,7 +447,7 @@ export default function ObjetivosPage() {
                             <SelectTrigger className="h-auto min-h-10 whitespace-normal text-left break-words [&>span]:line-clamp-none [&>span]:whitespace-normal [&>span]:break-words">
                                 <SelectValue placeholder="Seleccionar..." />
                             </SelectTrigger>
-                            <SelectContent className="max-w-[90vw] sm:max-w-[550px]">
+                            <SelectContent className="max-w-[90vw] sm:max-w-[550px] max-h-[300px] overflow-y-auto">
                                 {proyectosParaCrear.map(p => (
                                     <SelectItem key={p.id_proyecto} value={String(p.id_proyecto)} className="whitespace-normal break-words py-2 pr-8">
                                         {p.proyecto_descripcion}

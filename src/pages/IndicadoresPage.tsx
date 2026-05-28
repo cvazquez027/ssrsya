@@ -4,7 +4,7 @@ import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Pencil, Trash2, Search, ArrowRight, FolderKanban, Plus, X, Save, MessageSquare, ShieldAlert } from "lucide-react"
+import { Pencil, Trash2, Search, ArrowRight, FolderKanban, Plus, X, Save, MessageSquare, ShieldAlert, ChevronLeft, ChevronRight } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -60,6 +60,10 @@ export default function IndicadoresPage() {
   const [commentOpen, setCommentOpen] = useState(false)
   const [selectedEntity, setSelectedEntity] = useState({ id: 0, title: "" })
 
+  // He agregado estados de paginación
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(30)
+
   useEffect(() => {
     fetchUser(); fetchProyectosMaster(); fetchOpciones(); fetchOpcionesInd(); fetchOpcionesSistemas();
   }, [])
@@ -86,6 +90,11 @@ export default function IndicadoresPage() {
   useEffect(() => {
     if (isModalOpen && editData.id_oe_temp) fetchJerarquia('actividades', editData.id_oe_temp, setModalActividades);
   }, [editData.id_oe_temp, isModalOpen])
+
+  // He agregado este efecto para resetear la página cuando cambian los filtros o la búsqueda
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, siglaFilter, idProyectoFilter, idOeFilter, idActividadFilter, rowsPerPage])
 
   const fetchJerarquia = async (tipo: string, id: string, setter: any) => {
     try {
@@ -261,6 +270,12 @@ export default function IndicadoresPage() {
     (i.actividad_descripcion || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Lógica de paginación
+  const totalPages = Math.ceil(filtered.length / rowsPerPage)
+  const startIndex = (currentPage - 1) * rowsPerPage
+  const endIndex = startIndex + rowsPerPage
+  const paginatedData = filtered.slice(startIndex, endIndex)
+
   if (loading) return <DashboardLayout currentSection="Indicadores"><div className="p-8 text-center">Cargando...</div></DashboardLayout>
 
   if (accesoDenegado) {
@@ -317,11 +332,12 @@ export default function IndicadoresPage() {
                     </SelectContent>
                 </Select>
 
+                {/* He agregado scroll al SelectContent del filtro de proyectos */}
                 <Select value={filterProyecto} onValueChange={(v) => { if(v === "todos") searchParams.delete("id_proyecto"); else searchParams.set("id_proyecto", v); searchParams.delete("id_oe"); searchParams.delete("id_actividad"); setSearchParams(searchParams); }}>
                     <SelectTrigger className="w-full sm:w-[180px] bg-white truncate text-left">
                         <SelectValue placeholder="Todos los Proyectos" />
                     </SelectTrigger>
-                    <SelectContent className="max-w-[90vw] sm:max-w-[400px]">
+                    <SelectContent className="max-w-[90vw] sm:max-w-[400px] max-h-[300px] overflow-y-auto">
                         <SelectItem value="todos">Todos los Proyectos</SelectItem>
                         {proyectosMaster.filter(p => filterDependencia === "todas" || p.sigla_dependencia === filterDependencia).map(p => <SelectItem key={p.id_proyecto} value={String(p.id_proyecto)} className="whitespace-normal py-2">{p.proyecto_descripcion}</SelectItem>)}
                     </SelectContent>
@@ -331,7 +347,7 @@ export default function IndicadoresPage() {
                     <SelectTrigger className="w-full sm:w-[180px] bg-white truncate text-left">
                         <SelectValue placeholder="Todos los O.E." />
                     </SelectTrigger>
-                    <SelectContent className="max-w-[90vw] sm:max-w-[400px]">
+                    <SelectContent className="max-w-[90vw] sm:max-w-[400px] max-h-[300px] overflow-y-auto">
                         <SelectItem value="todos">Todos los O.E.</SelectItem>
                         {filterOEs.map(oe => <SelectItem key={oe.id_oe} value={String(oe.id_oe)} className="whitespace-normal py-2">{oe.descripcion}</SelectItem>)}
                     </SelectContent>
@@ -341,7 +357,7 @@ export default function IndicadoresPage() {
                     <SelectTrigger className="w-full sm:w-[180px] bg-white truncate text-left">
                         <SelectValue placeholder="Todas las Actividades" />
                     </SelectTrigger>
-                    <SelectContent className="max-w-[90vw] sm:max-w-[400px]">
+                    <SelectContent className="max-w-[90vw] sm:max-w-[400px] max-h-[300px] overflow-y-auto">
                         <SelectItem value="todos">Todas las Actividades</SelectItem>
                         {filterActividades.map(a => <SelectItem key={a.id_actividad} value={String(a.id_actividad)} className="whitespace-normal py-2">{a.descripcion}</SelectItem>)}
                     </SelectContent>
@@ -368,10 +384,10 @@ export default function IndicadoresPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 ? (
+                  {paginatedData.length === 0 ? (
                     <tr><td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">No se encontraron resultados</td></tr>
                   ) : (
-                    filtered.map((ind) => (
+                    paginatedData.map((ind) => (
                       <tr key={ind.id_indicador} className="bg-white border-b hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 align-top">
                            <div className="font-medium text-gray-900 leading-tight">{ind.nombre}</div>
@@ -390,18 +406,18 @@ export default function IndicadoresPage() {
                            )}
 
                            <div className="text-[11px] text-muted-foreground mt-1 italic break-words">{ind.construccion}</div>
-                        </td>
+                          </td>
                         <td className="px-6 py-4 align-top text-xs text-center">
                             <div className="bg-slate-50 p-1 rounded border">
                                 <div><span className="font-bold text-slate-500">2026:</span> {ind.meta_anio1 || "0"}{ind.tipo_meta === 'porcentaje' ? '%' : ''}</div>
                                 <div className="mt-1"><span className="font-bold text-slate-500">2027:</span> {ind.meta_anio2 || "0"}{ind.tipo_meta === 'porcentaje' ? '%' : ''}</div>
                             </div>
-                        </td>
+                         </td>
                         <td className="px-6 py-4 align-top text-xs text-muted-foreground italic leading-relaxed">{ind.actividad_descripcion}</td>
                         <td className="px-6 py-4 align-top text-xs">
                             <div className="font-bold text-blue-600 mb-1 uppercase">{ind.sigla_dependencia}</div>
                             <div className="flex items-center gap-1 leading-tight"><FolderKanban className="h-3 w-3 shrink-0" /> {ind.proyecto_nombre}</div>
-                        </td>
+                         </td>
                         <td className="px-6 py-4 text-right space-x-1 whitespace-nowrap align-top">
                             <Link to={`/proyecto-detalle/${ind.id_proyecto}`}>
                                 <Button variant="ghost" size="sm" title="Ver Detalle"><ArrowRight className="h-4 w-4 text-gray-500" /></Button>
@@ -413,13 +429,60 @@ export default function IndicadoresPage() {
                                     <Button variant="ghost" size="sm" onClick={() => handleBorrar(ind.id_indicador)} title="Borrar"><Trash2 className="h-4 w-4 text-red-600" /></Button>
                                 </>
                             )}
-                        </td>
-                      </tr>
+                         </td>
+                       </tr>
                     ))
                   )}
                 </tbody>
-              </table>
+               </table>
              </div>
+
+             {/* He agregado el panel de paginación con selector de filas por página */}
+             {filtered.length > 0 && (
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-6 py-4 border-t bg-gray-50">
+                  <div className="text-sm text-muted-foreground">
+                    Mostrando {startIndex + 1} a {Math.min(endIndex, filtered.length)} de {filtered.length} resultados
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Anterior
+                    </Button>
+                    <span className="text-sm px-2">
+                      Página {currentPage} de {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Siguiente
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Filas por página:</span>
+                    <Select value={String(rowsPerPage)} onValueChange={(val) => setRowsPerPage(Number(val))}>
+                      <SelectTrigger className="w-[70px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="30">30</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+             )}
           </CardContent>
         </Card>
 
@@ -432,7 +495,7 @@ export default function IndicadoresPage() {
                        <Label>1. Proyecto</Label>
                        <Select value={editData.id_proyecto_temp} onValueChange={(val) => setEditData({...editData, id_proyecto_temp: val, id_oe_temp: "", id_actividad: ""})}>
                             <SelectTrigger className="h-auto min-h-10 whitespace-normal text-left break-words [&>span]:line-clamp-none"><SelectValue placeholder="Proyecto..." /></SelectTrigger>
-                            <SelectContent className="max-w-[90vw] sm:max-w-[550px]">
+                            <SelectContent className="max-w-[90vw] sm:max-w-[550px] max-h-[300px] overflow-y-auto">
                                 {proyectosParaCrear.map(p => <SelectItem key={p.id_proyecto} value={String(p.id_proyecto)} className="whitespace-normal py-2">{p.proyecto_descripcion}</SelectItem>)}
                             </SelectContent>
                        </Select>
@@ -443,7 +506,7 @@ export default function IndicadoresPage() {
                        <Label>2. Objetivo</Label>
                        <Select value={editData.id_oe_temp} onValueChange={(val) => setEditData({...editData, id_oe_temp: val, id_actividad: ""})}>
                             <SelectTrigger className="h-auto min-h-10 whitespace-normal text-left break-words [&>span]:line-clamp-none"><SelectValue placeholder="Objetivo..." /></SelectTrigger>
-                            <SelectContent className="max-w-[90vw] sm:max-w-[550px]">
+                            <SelectContent className="max-w-[90vw] sm:max-w-[550px] max-h-[300px] overflow-y-auto">
                                 {modalOEs.map(oe => <SelectItem key={oe.id_oe} value={String(oe.id_oe)} className="whitespace-normal py-2">{oe.descripcion}</SelectItem>)}
                             </SelectContent>
                        </Select>
@@ -454,7 +517,7 @@ export default function IndicadoresPage() {
                        <Label>3. Actividad</Label>
                        <Select value={editData.id_actividad} onValueChange={(val) => setEditData({...editData, id_actividad: val})}>
                             <SelectTrigger className="h-auto min-h-10 whitespace-normal text-left break-words [&>span]:line-clamp-none"><SelectValue placeholder="Actividad..." /></SelectTrigger>
-                            <SelectContent className="max-w-[90vw] sm:max-w-[550px]">
+                            <SelectContent className="max-w-[90vw] sm:max-w-[550px] max-h-[300px] overflow-y-auto">
                                 {modalActividades.map(a => <SelectItem key={a.id_actividad} value={String(a.id_actividad)} className="whitespace-normal py-2">{a.descripcion}</SelectItem>)}
                             </SelectContent>
                        </Select>
@@ -468,7 +531,7 @@ export default function IndicadoresPage() {
                        <Label>Tipo de Indicador</Label>
                        <Select value={editData.id_tipo_indicador} onValueChange={(val) => setEditData({...editData, id_tipo_indicador: val})}>
                            <SelectTrigger><SelectValue placeholder="Seleccione..."/></SelectTrigger>
-                           <SelectContent>
+                           <SelectContent className="max-h-[300px] overflow-y-auto">
                                {opcionesInd.tipos.map(t => (
                                    <SelectItem key={t.id} value={String(t.id)} title={t.descripcion || t.nombre}>
                                        {t.nombre || t.descripcion || `Opción ${t.id}`}
@@ -491,7 +554,7 @@ export default function IndicadoresPage() {
                        <Label>Sistema Origen</Label>
                        <Select value={editData.id_otro_sistema} onValueChange={(val) => setEditData({...editData, id_otro_sistema: val})}>
                            <SelectTrigger><SelectValue placeholder="Seleccione..."/></SelectTrigger>
-                           <SelectContent>
+                           <SelectContent className="max-h-[300px] overflow-y-auto">
                                {opcionesSistemas.sistemas.map(s => (
                                    <SelectItem key={s.id} value={String(s.id)}>
                                        {s.descripcion}

@@ -4,7 +4,7 @@ import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Pencil, Trash2, Search, ArrowRight, FolderKanban, ListChecks, X, Plus, Save, MessageSquare, ShieldAlert } from "lucide-react"
+import { Pencil, Trash2, Search, ArrowRight, FolderKanban, ListChecks, X, Plus, Save, MessageSquare, ShieldAlert, ChevronLeft, ChevronRight } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -52,6 +52,10 @@ export default function ActividadesPage() {
   const [commentOpen, setCommentOpen] = useState(false)
   const [selectedEntity, setSelectedEntity] = useState({ id: 0, title: "" })
 
+  // He agregado estados de paginación
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(30)
+
   useEffect(() => {
     fetchUser()
     fetchOpciones()
@@ -73,6 +77,11 @@ export default function ActividadesPage() {
       if (proyId) fetchOEsForModal(proyId) 
       else setModalOEs([])
   }, [editData.id_proyecto_temp, idProyectoFilter])
+
+  // He agregado este efecto para resetear la página cuando cambian los filtros o la búsqueda
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, siglaFilter, idProyectoFilter, idOeFilter, rowsPerPage])
 
   const fetchUser = async () => {
       try {
@@ -287,11 +296,16 @@ export default function ActividadesPage() {
     return matchSearch && matchOe;
   })
 
-  let tituloPagina = "Listado Global de Actividades";
-  if (idProyectoFilter && actividades.length > 0) tituloPagina = `Actividades del Proyecto: ${actividades[0].proyecto_descripcion}`;
-  else if (siglaFilter) tituloPagina = `Actividades de ${siglaFilter}`;
+  // Lógica de paginación
+  const totalPages = Math.ceil(filtered.length / rowsPerPage)
+  const startIndex = (currentPage - 1) * rowsPerPage
+  const endIndex = startIndex + rowsPerPage
+  const paginatedData = filtered.slice(startIndex, endIndex)
 
-  if (loading) return <DashboardLayout currentSection="Actividades"><div className="p-8 text-center">Cargando...</div></DashboardLayout>
+  // He cambiado el título a uno fijo según lo solicitado
+  const tituloPagina = "Actividades Prioritarias"
+
+  if (loading) return <DashboardLayout currentSection="Actividades Prioritarias"><div className="p-8 text-center">Cargando...</div></DashboardLayout>
 
   // PANTALLA DE ACCESO DENEGADO
   if (accesoDenegado) {
@@ -339,9 +353,10 @@ export default function ActividadesPage() {
                     </SelectContent>
                 </Select>
 
+                {/* He agregado scroll al SelectContent del filtro de proyectos */}
                 <Select value={filterProyecto} onValueChange={handleProyectoChange}>
                     <SelectTrigger className="w-full sm:w-[220px] bg-white truncate"><SelectValue placeholder="Proyecto" /></SelectTrigger>
-                    <SelectContent className="max-w-[90vw] sm:max-w-[400px]">
+                    <SelectContent className="max-w-[90vw] sm:max-w-[400px] max-h-[300px] overflow-y-auto">
                         <SelectItem value="todos">Todos los Proyectos</SelectItem>
                         {proyectosDisponibles.map(p => (
                             <SelectItem key={p.id_proyecto} value={String(p.id_proyecto)} className="whitespace-normal break-words py-2 pr-8" title={p.proyecto_descripcion}>
@@ -355,7 +370,7 @@ export default function ActividadesPage() {
                     <SelectTrigger className="w-full sm:w-[220px] bg-white truncate">
                         <SelectValue placeholder="Objetivo Esp." />
                     </SelectTrigger>
-                    <SelectContent className="max-w-[90vw] sm:max-w-[400px]">
+                    <SelectContent className="max-w-[90vw] sm:max-w-[400px] max-h-[300px] overflow-y-auto">
                         <SelectItem value="todos">Todos los O.E.</SelectItem>
                         {filterOEs.map(oe => (
                             <SelectItem key={oe.id_oe} value={String(oe.id_oe)} className="whitespace-normal break-words py-2 pr-8" title={oe.descripcion}>
@@ -387,10 +402,10 @@ export default function ActividadesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 ? (
+                  {paginatedData.length === 0 ? (
                     <tr><td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">No se encontraron resultados</td></tr>
                   ) : (
-                    filtered.map((act) => (
+                    paginatedData.map((act) => (
                       <tr key={act.id_actividad} className="bg-white border-b hover:bg-gray-50">
                         <td className="px-6 py-4 font-medium text-gray-900 align-top">
                           <div className="flex items-start gap-2">
@@ -400,23 +415,23 @@ export default function ActividadesPage() {
                                 <p className="text-xs text-muted-foreground mt-1"><span className="font-bold">OE:</span> {act.oe_descripcion}</p>
                             </div>
                           </div>
-                        </td>
+                         </td>
                         <td className="px-6 py-4 align-top text-xs space-y-2">
                             <div className="flex flex-col"><span className="text-muted-foreground text-[10px]">Tipo:</span><span className="font-medium">{act.tipo_descripcion || "-"}</span></div>
                             <div className="flex flex-col"><span className="text-muted-foreground text-[10px]">Estado:</span><span className="font-medium text-blue-700">{act.estado_actividad_descripcion || "-"}</span></div>
-                        </td>
+                         </td>
                         <td className="px-6 py-4 text-muted-foreground align-top text-xs">
                             <div className="flex flex-col gap-1">
                                 <span className="font-bold text-blue-600">{act.sigla_dependencia}</span>
                                 <div className="flex items-center gap-1"><FolderKanban className="h-3 w-3" /> {act.proyecto_descripcion}</div>
                             </div>
-                        </td>
+                         </td>
                         <td className="px-6 py-4 align-top">
                            <span className={`px-2 py-1 rounded text-xs font-semibold whitespace-nowrap
                              ${act.estado_proyecto == 1 ? 'bg-blue-100 text-blue-800' : 
                                act.estado_proyecto == 3 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }
                            `}>{act.proyecto_estado_descripcion}</span>
-                        </td>
+                         </td>
                         <td className="px-6 py-4 text-right space-x-1 whitespace-nowrap align-top">
 
                             <Link to={`/proyecto-detalle/${act.id_proyecto}`}>
@@ -433,13 +448,60 @@ export default function ActividadesPage() {
                                     <Button variant="ghost" size="sm" onClick={() => handleBorrar(act.id_actividad)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
                                 </>
                             )}
-                        </td>
-                      </tr>
+                         </td>
+                       </tr>
                     ))
                   )}
                 </tbody>
               </table>
              </div>
+
+             {/* He agregado el panel de paginación con selector de filas por página */}
+             {filtered.length > 0 && (
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-6 py-4 border-t bg-gray-50">
+                  <div className="text-sm text-muted-foreground">
+                    Mostrando {startIndex + 1} a {Math.min(endIndex, filtered.length)} de {filtered.length} resultados
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Anterior
+                    </Button>
+                    <span className="text-sm px-2">
+                      Página {currentPage} de {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Siguiente
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Filas por página:</span>
+                    <Select value={String(rowsPerPage)} onValueChange={(val) => setRowsPerPage(Number(val))}>
+                      <SelectTrigger className="w-[70px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="30">30</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+             )}
           </CardContent>
         </Card>
 
@@ -458,7 +520,7 @@ export default function ActividadesPage() {
                             <SelectTrigger className="h-auto min-h-10 whitespace-normal text-left break-words [&>span]:line-clamp-none [&>span]:whitespace-normal [&>span]:break-words">
                                 <SelectValue placeholder="Proyecto..." />
                             </SelectTrigger>
-                            <SelectContent className="max-w-[90vw] sm:max-w-[550px]">
+                            <SelectContent className="max-w-[90vw] sm:max-w-[550px] max-h-[300px] overflow-y-auto">
                                 {proyectosParaCrear.map(p => (
                                     <SelectItem key={p.id_proyecto} value={String(p.id_proyecto)} className="whitespace-normal break-words py-2 pr-8">
                                         {p.proyecto_descripcion}
@@ -475,7 +537,7 @@ export default function ActividadesPage() {
                             <SelectTrigger className="h-auto min-h-10 whitespace-normal text-left break-words [&>span]:line-clamp-none [&>span]:whitespace-normal [&>span]:break-words">
                                 <SelectValue placeholder="Seleccionar objetivo..." />
                             </SelectTrigger>
-                            <SelectContent className="max-w-[90vw] sm:max-w-[550px]">
+                            <SelectContent className="max-w-[90vw] sm:max-w-[550px] max-h-[300px] overflow-y-auto">
                                 {modalOEs.length === 0 ? (
                                     <SelectItem value="0" disabled>Sin objetivos</SelectItem>
                                 ) : (
@@ -503,7 +565,7 @@ export default function ActividadesPage() {
                            <SelectTrigger className="h-auto min-h-10 whitespace-normal text-left break-words [&>span]:line-clamp-none [&>span]:whitespace-normal [&>span]:break-words">
                                <SelectValue/>
                            </SelectTrigger>
-                           <SelectContent className="max-w-[90vw] sm:max-w-[300px]">
+                           <SelectContent className="max-w-[90vw] sm:max-w-[300px] max-h-[300px] overflow-y-auto">
                                {opciones.tipos.map(t => (
                                    <SelectItem key={t.id} value={String(t.id)} className="whitespace-normal break-words py-2 pr-8">
                                        {t.descripcion}
@@ -518,7 +580,7 @@ export default function ActividadesPage() {
                            <SelectTrigger className="h-auto min-h-10 whitespace-normal text-left break-words [&>span]:line-clamp-none [&>span]:whitespace-normal [&>span]:break-words">
                                <SelectValue/>
                            </SelectTrigger>
-                           <SelectContent className="max-w-[90vw] sm:max-w-[300px]">
+                           <SelectContent className="max-w-[90vw] sm:max-w-[300px] max-h-[300px] overflow-y-auto">
                                {opciones.estados.map(e => (
                                    <SelectItem key={e.id} value={String(e.id)} className="whitespace-normal break-words py-2 pr-8">
                                        {e.descripcion}
